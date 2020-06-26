@@ -1,0 +1,63 @@
+!pwd
+!unzip '2020CompetitionData.zip'
+
+!pip install pandas
+!pip install -U scikit-learn
+!pip install scikit-surprise
+
+%cd 'CompetitionDataFinal'
+
+import numpy as np
+import pandas as pd
+from surprise import SVD, SVDpp
+from surprise.model_selection import cross_validate
+from sklearn.model_selection import train_test_split
+from surprise import Reader
+
+movie_codes = pd.read_csv('movie-codes.txt', sep='delimiter', header = None)
+movie_codes.head()
+
+reader = Reader(line_format='user item rating', sep=',', skip_lines=1)
+ratingsDataset = Dataset.load_from_file('ratings-final.csv', reader=reader)
+
+movie_codes['Index'] = movie_codes[0].map(lambda x: x.split('\t')[1])
+movie_codes['Name'] = movie_codes[0].map(lambda x: x.split('\t')[0])
+movie_codes.drop(0, axis = 1, inplace = True)
+movie_codes.head()
+
+ratings_final = Dataset.load_from_file('ratings-final.csv', reader=reader)
+#pd.read_csv('ratings-final.csv')
+#(ratings_final_train, ratings_final_test) = train_test_split(ratings_final, test_size = 0.2)
+#final_ratings_train_table = ratings_final_train.pivot_table(values = 'rating', columns = 'movie-code', index = 'reviewerid')
+#final_ratings_train_table.head()
+
+impressions = Dataset.load_from_file('impressions-train.csv', reader=reader)
+#pd.read_csv('impressions-train.csv')
+#(impressions_train, impressions_test) = train_test_split(impressions, test_size = 0.2)
+#impression_train_table = impressions_train.pivot_table(values = 'rating', columns = 'movie-code', index = 'reviewerid')
+#impression_train_table.head()
+
+#algo = SVD()
+#cross_validate(algo, ratings_final, measures=['RMSE', 'MAE'], cv=5, verbose=True)
+
+from surprise import accuracy
+from surprise.model_selection import train_test_split
+from surprise.model_selection import GridSearchCV
+
+#algo = SVD()
+trainset, testset = train_test_split(ratings_final, test_size=.2)
+#algo.fit(trainset)
+#predictions = algo.test(testset)
+
+#accuracy.rmse(predictions, verbose=True)
+
+from surprise.model_selection import GridSearchCV
+param_grid = {'n_epochs': [1, 100], 'lr_all': [0.001, 0.01],
+              'reg_all': [0.1, 0.9]}
+gs = GridSearchCV(SVDpp, param_grid, measures=['rmse', 'mae'], cv=3)
+gs.fit(ratings_final)
+
+print(gs.best_score['rmse'])
+
+# combination of parameters that gave the best RMSE score
+print(gs.best_params['rmse'])
